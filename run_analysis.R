@@ -58,3 +58,5 @@ aggregated_data <- aggregate(filtered_data[,filtered_columns],
                              FUN=mean)
 
 write.table(aggregated_data, file = "aggregated_data.txt", row.name=FALSE)
+
+message("aggregated_data.txt file created")
