@@ -11,11 +11,12 @@ if (!file.exists(root_data_folder)){
     unlink(temp)
 }
 
-# Read raw data
-# common
-activity_labels <- read.table(paste0(root_data_folder, "/activity_labels.txt"), col.names =  c("activity.id", "activity.label"))
+# Read common data for all sets
+activity_labels <- read.table(paste0(root_data_folder, "/activity_labels.txt"), 
+                              col.names =  c("activity.id", "activity.label"))
 features <- read.table(paste0(root_data_folder, "/features.txt"), col.names = c("id", "name"))
 
+# Reads data for given set: "test" or "train"
 readset <- function(setname) {
     set_folder <- paste0(root_data_folder,"/", setname)    
     x_path <- paste0(set_folder, "/X_", setname, ".txt")
@@ -40,9 +41,20 @@ readset <- function(setname) {
 train_data <- readset("train")
 test_data <- readset("test")
 
-all_data <- rbind(train_data, test_data)
-data <- merge(all_data, activity_labels, by="activity.id")
+# Merge the training and the test sets to create one data set.
+# Use descriptive activity names to name the activities in the data set
+all_data <- merge(rbind(train_data, test_data), activity_labels, by = "activity.id")
 
+# 4. Extract only the measurements on the mean and standard deviation for each measurement.
+#    "subject.id" and "activity.label" columns are also included.
+filtered_columns <- grep("[Mm]ean|std", names(all_data), value=TRUE)
+filtered_data <- all_data[, c("subject.id", "activity.label", filtered_columns)]
 
-#x_test <- read.table("UCI HAR Dataset/train/X_train.txt", col.names = features$name)
+# 5. From the data set in step 4, create a second, independent tidy data set with the 
+#    average of each variable for each activity and each subject.
+aggregated_data <- aggregate(filtered_data[,filtered_columns], 
+                             by = list("activity.label" = filtered_data$activity.label, 
+                                       "subject.id" = filtered_data$subject.id), 
+                             FUN=mean)
 
+write.table(aggregated_data, file = "aggregated_data.txt", row.name=FALSE)
